@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -66,6 +67,27 @@ void AMPTestCharacter::BeginPlay()
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
+	}
+}
+
+void AMPTestCharacter::OpenLobby()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->ServerTravel("/Game/ThirdPerson/Maps/Lobby?listen");
+	}
+}
+
+void AMPTestCharacter::OpenLevel(const FString& Address)
+{
+	UGameplayStatics::OpenLevel(this, *Address);
+}
+
+void AMPTestCharacter::ClientTravel(const FString& Address)
+{
+	if (APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController())
+	{
+		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 	}
 }
 

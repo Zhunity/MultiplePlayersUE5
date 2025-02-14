@@ -69,5 +69,14 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	UFUNCTION(BlueprintCallable)
+	void OpenLobby();
+
+	UFUNCTION(BlueprintCallable)
+	void OpenLevel(const FString& Address);
+
+	UFUNCTION(BlueprintCallable)
+	void ClientTravel(const FString& Address);
 };
 
