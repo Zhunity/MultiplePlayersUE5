@@ -11,13 +11,16 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Kismet/GameplayStatics.h"
+#include "Online/OnlineSessionNames.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
 // AMPTestCharacter
 
-AMPTestCharacter::AMPTestCharacter() : OnCreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::CreateSessionComplete ))
+AMPTestCharacter::AMPTestCharacter() :
+	OnCreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::CreateSessionComplete )),
+	OnFindSessionsCompleteDelegate(FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::FindGameSessionComplete ))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -59,7 +62,7 @@ AMPTestCharacter::AMPTestCharacter() : OnCreateSessionCompleteDelegate(FOnCreate
 	{
 		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
 		UE_LOG(LogTemp, Log, TEXT("sssss  ss %s"), *OnlineSubsystem->GetSubsystemName().ToString());
-		if(GEngine) // 不加这句起不了工程
+		if(GEngine) // 加上这个启动才不会崩
 		{
 			GEngine->AddOnScreenDebugMessage(
 			-1,
@@ -126,6 +129,7 @@ void AMPTestCharacter::CreateGameSession()
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bShouldAdvertise = true;
 	SessionSettings->bUsesPresence = true;
+	// SessionSettings->bUseLobbiesIfAvailable = true;
 	const auto LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
 }
@@ -151,6 +155,37 @@ void AMPTestCharacter::CreateSessionComplete(FName SessionName, bool bWasSuccess
 			);
 	}
 }
+
+void AMPTestCharacter::FindGameSession()
+{
+	if(!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
+	SessionSearchSettings = MakeShareable(new FOnlineSessionSearch()); // 结果存在这里的searchresult里面
+	SessionSearchSettings->MaxSearchResults = 10000; // 结果 数量
+	SessionSearchSettings->bIsLanQuery = false;
+	SessionSearchSettings->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	
+	const auto LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearchSettings.ToSharedRef()); // 什么意思，搜到的都是在线的？
+} 
+
+void AMPTestCharacter::FindGameSessionComplete(bool bWasSuccessful)
+{
+	for(auto Result : SessionSearchSettings->SearchResults)
+	{
+		auto Id = Result.GetSessionIdStr();
+		auto User = Result.Session.OwningUserName;
+		GEngine->AddOnScreenDebugMessage(-
+			1,
+			15.0f,
+			FColor::Red,
+			FString::Printf(TEXT("FindGameSessionComplete id : %s user name : %s"), *Id, *User) 
+			);
+	}
+} 
 
 //////////////////////////////////////////////////////////////////////////
 // Input
