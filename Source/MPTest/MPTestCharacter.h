@@ -3,8 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SocketSubsystem.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Online/SessionsOSSAdapter.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "MPTestCharacter.generated.h"
 
 class USpringArmComponent;
@@ -78,5 +81,17 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ClientTravel(const FString& Address);
+
+	IOnlineSessionPtr OnlineSessionInterface;
+
+protected:
+	UFUNCTION(BlueprintCallable)
+	void CreateGameSession();
+
+	void CreateSessionComplete(FName SessionName, bool bWasSuccessful);
+
+private:
+	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
+	
 };
 

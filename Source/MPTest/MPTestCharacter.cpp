@@ -17,7 +17,7 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 //////////////////////////////////////////////////////////////////////////
 // AMPTestCharacter
 
-AMPTestCharacter::AMPTestCharacter()
+AMPTestCharacter::AMPTestCharacter() : OnCreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::CreateSessionComplete ))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -53,6 +53,21 @@ AMPTestCharacter::AMPTestCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if(OnlineSubsystem)
+	{
+		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
+		UE_LOG(LogTemp, Log, TEXT("sssss  ss %s"), *OnlineSubsystem->GetSubsystemName().ToString());
+		if(GEngine) // 不加这句起不了工程
+		{
+			GEngine->AddOnScreenDebugMessage(
+			-1,
+			15.0f,
+			FColor::Blue,
+			FString::Printf(TEXT("ssss %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
+		}
+	}
 }
 
 void AMPTestCharacter::BeginPlay()
@@ -88,6 +103,52 @@ void AMPTestCharacter::ClientTravel(const FString& Address)
 	if (APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController())
 	{
 		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
+	}
+}
+
+void AMPTestCharacter::CreateGameSession()
+{
+	if(! OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+	auto ExistingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+	if(ExistingSession != nullptr)
+	{
+		OnlineSessionInterface->DestroySession(NAME_GameSession); 
+	}
+	OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate  ); 
+	// https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/OnlineSubsystem/FOnlineSessionSettings
+	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
+	SessionSettings->bIsLANMatch = false;
+	SessionSettings->NumPublicConnections = 4;
+	SessionSettings->bAllowJoinInProgress = true;
+	SessionSettings->bAllowJoinViaPresence = true;
+	SessionSettings->bShouldAdvertise = true;
+	SessionSettings->bUsesPresence = true;
+	const auto LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+}
+
+void AMPTestCharacter::CreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if(bWasSuccessful)
+	{
+		GEngine->AddOnScreenDebugMessage(-
+			1,
+			15.0f,
+			FColor::Green ,
+			FString::Printf(TEXT("CreateSessionComplete success %s "), *SessionName.ToString())
+			);
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-
+			1,
+			15.0f,
+			FColor::Red,
+			FString::Printf(TEXT("CreateSessionComplete failed "))
+			);
 	}
 }
 
