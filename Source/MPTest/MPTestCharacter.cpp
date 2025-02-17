@@ -61,7 +61,7 @@ AMPTestCharacter::AMPTestCharacter() :
 	if(OnlineSubsystem)
 	{
 		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-		UE_LOG(LogTemp, Log, TEXT("sssss  ss %s"), *OnlineSubsystem->GetSubsystemName().ToString());
+		UE_LOG(LogTemplateCharacter, Log, TEXT("sssss  ss %s"), *OnlineSubsystem->GetSubsystemName().ToString());
 		if(GEngine) // 加上这个启动才不会崩
 		{
 			GEngine->AddOnScreenDebugMessage(
@@ -160,6 +160,7 @@ void AMPTestCharacter::FindGameSession()
 {
 	if(!OnlineSessionInterface.IsValid())
 	{
+		UE_LOG(LogTemplateCharacter, LogError, TEXT("FindGameSession OnlineSessionInterface IsInvalid"));
 		return;
 	}
 	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
@@ -170,10 +171,22 @@ void AMPTestCharacter::FindGameSession()
 	
 	const auto LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearchSettings.ToSharedRef()); // 什么意思，搜到的都是在线的？
+	UE_LOG(LogTemplateCharacter, LogError, TEXT("FindGameSession End"));
 } 
 
 void AMPTestCharacter::FindGameSessionComplete(bool bWasSuccessful)
 {
+	if (!bWasSuccessful)
+	{
+		GEngine->AddOnScreenDebugMessage(-
+			1,
+			15.0f,
+			FColor::Red,
+			FString::Printf(TEXT("FindGameSessionComplete failed "))
+		);
+		return;
+	}
+	UE_LOG(LogTemplateCharacter, LogError, TEXT("FindGameSessionComplete %d", SessionSearchSettings->SearchResults.Num()));
 	for(auto Result : SessionSearchSettings->SearchResults)
 	{
 		auto Id = Result.GetSessionIdStr();
@@ -181,7 +194,7 @@ void AMPTestCharacter::FindGameSessionComplete(bool bWasSuccessful)
 		GEngine->AddOnScreenDebugMessage(-
 			1,
 			15.0f,
-			FColor::Red,
+			FColor::Green,
 			FString::Printf(TEXT("FindGameSessionComplete id : %s user name : %s"), *Id, *User) 
 			);
 	}
