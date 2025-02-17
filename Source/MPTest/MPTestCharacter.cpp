@@ -160,7 +160,7 @@ void AMPTestCharacter::FindGameSession()
 {
 	if(!OnlineSessionInterface.IsValid())
 	{
-		UE_LOG(LogTemplateCharacter, LogError, TEXT("FindGameSession OnlineSessionInterface IsInvalid"));
+		UE_LOG(LogTemplateCharacter, Error, TEXT("FindGameSession OnlineSessionInterface IsInvalid"));
 		return;
 	}
 	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
@@ -171,7 +171,7 @@ void AMPTestCharacter::FindGameSession()
 	
 	const auto LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
 	OnlineSessionInterface->FindSessions(*LocalPlayer->GetPreferredUniqueNetId(), SessionSearchSettings.ToSharedRef()); // 什么意思，搜到的都是在线的？
-	UE_LOG(LogTemplateCharacter, LogError, TEXT("FindGameSession End"));
+	UE_LOG(LogTemplateCharacter, Error, TEXT("FindGameSession End"));
 } 
 
 void AMPTestCharacter::FindGameSessionComplete(bool bWasSuccessful)
@@ -186,7 +186,7 @@ void AMPTestCharacter::FindGameSessionComplete(bool bWasSuccessful)
 		);
 		return;
 	}
-	UE_LOG(LogTemplateCharacter, LogError, TEXT("FindGameSessionComplete %d", SessionSearchSettings->SearchResults.Num()));
+	UE_LOG(LogTemplateCharacter, Error, TEXT("FindGameSessionComplete %d"), SessionSearchSettings->SearchResults.Num());
 	for(auto Result : SessionSearchSettings->SearchResults)
 	{
 		auto Id = Result.GetSessionIdStr();
